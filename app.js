@@ -1,7 +1,5 @@
 // =========================================================
 // Strux – Minimal Landing Scripts
-// - Sticky Header State (schwebend / angedockt)
-// - Creator Slideshow mit Daten aus creators.json
 // =========================================================
 
 (function() {
@@ -10,18 +8,13 @@
     const $year = document.getElementById('year');
     if ($year) $year.textContent = new Date().getFullYear();
 
-    // Header: at-top vs scrolled (bleibt sticky, ändert Stil)
+    // Header: at-top vs scrolled
     const topSentinel = document.getElementById('top-sentinel');
     if ('IntersectionObserver' in window && topSentinel) {
         const io = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    $header.classList.add('at-top');
-                    $header.classList.remove('scrolled');
-                } else {
-                    $header.classList.remove('at-top');
-                    $header.classList.add('scrolled');
-                }
+                $header.classList.toggle('at-top', entry.isIntersecting);
+                $header.classList.toggle('scrolled', !entry.isIntersecting);
             });
         }, { rootMargin: '-1px 0px 0px 0px', threshold: 0 });
         io.observe(topSentinel);
@@ -59,53 +52,70 @@
             const b = document.createElement('button');
             b.type = 'button';
             b.setAttribute('role', 'tab');
-            b.setAttribute('aria-label', `${c.name}`);
-            b.setAttribute('aria-selected', i === state.index ? 'true' : 'false');
+            b.setAttribute('aria-label', c.name);
+            b.setAttribute('aria-selected', i === state.index);
             b.addEventListener('click', () => goTo(i));
             $dots.appendChild(b);
         });
     }
 
-    function render() {
+    function render(isInitial = false) {
         if (!state.creators.length) return;
         const c = state.creators[state.index];
 
-        $card.setAttribute('aria-busy', 'true');
+        const animatedElements = [
+            $name.parentElement, // The div containing name and handle
+            ...$card.querySelectorAll('.stats li'),
+            $avatar
+        ];
 
-        // Media
-        if (c.video) {
-            $video.src = c.video;
+        function updateContent() {
+            // Media
+            $video.src = c.video || '';
             $video.poster = c.poster || '';
-            $video.muted = true; $video.loop = true; $video.playsInline = true; $video.autoplay = true;
-            $video.play().catch(() => {/* ignored */});
-        } else {
-            $video.removeAttribute('src');
-            $video.poster = c.poster || '';
+            const playPromise = $video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {}); // Ignore autoplay errors
+            }
+
+            // Identity
+            $avatar.src = c.avatar || '';
+            $avatar.alt = c.name ? `${c.name} – Avatar` : 'Avatar';
+            $name.textContent = c.name || 'Unbekannt';
+            $handle.textContent = c.handle || '';
+
+            // Stats
+            $followers.textContent = c.followers != null ? formatFollowers(c.followers) : '–';
+            $platform.textContent = c.platform || '–';
+            $category.textContent = c.category || '–';
+
+            // Update dots
+            Array.from($dots.children).forEach((el, i) => el.setAttribute('aria-selected', i === state.index));
+
+            // Trigger fade-in animation
+            animatedElements.forEach(el => {
+                el.classList.remove('anim-text-out');
+                el.classList.add('anim-text-in');
+            });
+
+            $card.removeAttribute('aria-busy');
         }
 
-        // Identity
-        $avatar.src = c.avatar || '';
-        $avatar.alt = c.name ? `${c.name} – Avatar` : 'Avatar';
-        $name.textContent = c.name || 'Unbekannt';
-        $handle.textContent = c.handle || '';
+        $card.setAttribute('aria-busy', 'true');
 
-        // Stats
-        $followers.textContent = c.followers != null ? formatFollowers(c.followers) : '–';
-        $platform.textContent = c.platform || '–';
-        $category.textContent = c.category || '–';
-
-        // Update dots
-        Array.from($dots.children).forEach((el, i) => el.setAttribute('aria-selected', i === state.index ? 'true' : 'false'));
-
-        // Simple fade pulse
-        $card.style.opacity = '0.96';
-        requestAnimationFrame(() => { $card.style.transition = 'opacity .35s ease'; $card.style.opacity = '1'; });
-
-        $card.removeAttribute('aria-busy');
+        if (!isInitial) {
+            animatedElements.forEach(el => {
+                el.classList.remove('anim-text-in');
+                el.classList.add('anim-text-out');
+            });
+            setTimeout(updateContent, 300);
+        } else {
+            updateContent();
+        }
     }
 
-    function next() { state.index = (state.index + 1) % state.creators.length; render(); }
-    function prev() { state.index = (state.index - 1 + state.creators.length) % state.creators.length; render(); }
+    function next() { state.index = (state.index + 1) % state.creators.length; render(); resetTimer(); }
+    function prev() { state.index = (state.index - 1 + state.creators.length) % state.creators.length; render(); resetTimer(); }
     function goTo(i) { state.index = i; render(); resetTimer(); }
 
     function resetTimer() {
@@ -114,11 +124,10 @@
     }
 
     function wireEvents() {
-        $next.addEventListener('click', () => { next(); resetTimer(); });
-        $prev.addEventListener('click', () => { prev(); resetTimer(); });
-        // Pause bei Hover
+        $next.addEventListener('click', next);
+        $prev.addEventListener('click', prev);
         const carousel = document.querySelector('.carousel');
-        carousel.addEventListener('mouseenter', () => { if (state.timer) clearInterval(state.timer); });
+        carousel.addEventListener('mouseenter', () => clearInterval(state.timer));
         carousel.addEventListener('mouseleave', resetTimer);
     }
 
@@ -126,23 +135,51 @@
         try {
             const res = await fetch('creators.json', { cache: 'no-store' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
-            const json = await res.json();
-            state.creators = Array.isArray(json) ? json : (json.creators || []);
-            if (!state.creators.length) throw new Error('Keine Creator in creators.json gefunden');
+            state.creators = await res.json();
+            if (!state.creators || !state.creators.length) throw new Error('No creators found');
             renderDots();
-            render();
+            render(true); // Initial render
             resetTimer();
         } catch (err) {
-            console.error('[Strux] Konnte creators.json nicht laden:', err);
-            // Fallback Dummy
-            state.creators = [{
-                name: 'DemoCreator', handle: '@demo', followers: 12345, platform: 'Twitch', category: 'Variety',
-                avatar: 'assets/demo-avatar.jpg', video: 'assets/demo-video.mp4', poster: 'assets/demo-poster.jpg'
-            }];
-            renderDots();
-            render();
+            console.error('[Strux] Could not load creators.json:', err);
+            $card.innerHTML = `<p style="padding: 1rem; text-align: center;">Could not load creators.</p>`;
         }
     }
+
+    // Mobile Nav Toggle ------------------------------------------------------
+    const $mobileNavToggle = byId('mobile-nav-toggle');
+    const $body = document.body;
+
+    if ($mobileNavToggle) {
+        $mobileNavToggle.addEventListener('click', () => {
+            const isNavOpen = $body.classList.toggle('nav-open');
+            $mobileNavToggle.setAttribute('aria-expanded', isNavOpen);
+            $body.style.overflow = isNavOpen ? 'hidden' : '';
+        });
+    }
+
+    // Smooth Scrolling -------------------------------------------------------
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
+            if (!targetId || targetId === '#') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                targetElement.scrollIntoView({ behavior: 'smooth' });
+                if ($body.classList.contains('nav-open')) {
+                    $body.classList.remove('nav-open');
+                    $mobileNavToggle.setAttribute('aria-expanded', 'false');
+                    $body.style.overflow = '';
+                }
+            }
+        });
+    });
 
     // Init
     wireEvents();
