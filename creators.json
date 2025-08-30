@@ -1,0 +1,32 @@
+[
+  {
+    "name": "NovaHide",
+    "handle": "@novahide",
+    "platform": "Twitch",
+    "category": "Minecraft",
+    "followers": 48200,
+    "avatar": "assets/novahide.jpg",
+    "video": "assets/novahide-highlight.mp4",
+    "poster": "assets/novahide-poster.jpg"
+  },
+  {
+    "name": "PixelLina",
+    "handle": "@pixellina",
+    "platform": "YouTube",
+    "category": "IRL & Tech",
+    "followers": 128000,
+    "avatar": "assets/pixellina.jpg",
+    "video": "assets/pixellina-highlight.mp4",
+    "poster": "assets/pixellina-poster.jpg"
+  },
+  {
+    "name": "Herr Fuchs",
+    "handle": "@herrfuchsx",
+    "platform": "Twitch",
+    "category": "Gaming",
+    "followers": 103,
+    "avatar": "assets/herrfuchsx.png",
+    "video": "assets/herrfuchsx-highlight.mp4",
+    "poster": "assets/herrfuchsx-poster.png"
+  }
+]
