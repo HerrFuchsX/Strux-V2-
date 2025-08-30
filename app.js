@@ -141,8 +141,14 @@
             render(true); // Initial render
             resetTimer();
         } catch (err) {
-            console.error('[Strux] Could not load creators.json:', err);
-            $card.innerHTML = `<p style="padding: 1rem; text-align: center;">Could not load creators.</p>`;
+            console.error('[Strux] Could not load or parse creators.json:', err);
+            // Don't destroy the card, just hide the carousel and show an error.
+            const carousel = document.querySelector('.carousel');
+            if (carousel) carousel.style.display = 'none';
+            const errorEl = document.createElement('p');
+            errorEl.textContent = 'Creator-Daten konnten nicht geladen werden.';
+            errorEl.style.textAlign = 'center';
+            $dots.parentElement.insertBefore(errorEl, $dots);
         }
     }
 
