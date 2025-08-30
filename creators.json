@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Yummmy0",
+    "handle": "@yummmy0",
+    "platform": "Twitch",
+    "category": "Gaming",
+    "followers": 1.079,
+    "avatar": "assets/yummmy0.png",
+    "video": "assets/yummmy0-highlight.mp4",
+    "poster": ""
+  },
+  {
+    "name": "Herr Fuchs",
+    "handle": "@herrfuchsx",
+    "platform": "Twitch",
+    "category": "Gaming",
+    "followers": 103,
+    "avatar": "assets/herrfuchsx.png",
+    "video": "assets/herrfuchsx-highlight",
+    "poster": "assets/herrfuchsx-poster.png"
+  }
+]
