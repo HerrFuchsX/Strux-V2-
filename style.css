@@ -270,3 +270,29 @@ body.nav-open .mobile-nav-toggle .icon-bar:nth-child(3) { transform: translateY(
 .anim-text-in {
     animation: fade-in-up 0.4s ease-in forwards;
 }
+
+/* Updated Footer Styles */
+.footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.footer-nav {
+    display: flex;
+    gap: 24px;
+}
+
+.footer-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.footer-nav a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
